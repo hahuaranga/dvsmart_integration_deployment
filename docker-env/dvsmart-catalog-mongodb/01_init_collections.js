@@ -3,12 +3,24 @@
 // DVSmart Reorganization API - MongoDB Setup
 // =============================================
 
-// 1. Creación/Selección de la base de datos
+// 1. Autenticación como administrador
+try {
+    db.getSiblingDB('admin').auth(
+        process.env.MONGO_INITDB_ROOT_USERNAME, 
+        process.env.MONGO_INITDB_ROOT_PASSWORD
+    );
+    print("✅ Autenticación como root exitosa");
+} catch (e) {
+    print("❌ Error en autenticación root: " + e);
+    quit(1);
+}
+
+// 2. Creación/Selección de la base de datos
 const dbName = process.env.MONGO_INITDB_DATABASE;
 db = db.getSiblingDB(dbName);
 print("✅ Usando base de datos: " + dbName);
 
-// 2. Creación del usuario de aplicación
+// 3. Creación del usuario de aplicación
 try {
     db.createUser({
         user: process.env.MONGO_USER,
