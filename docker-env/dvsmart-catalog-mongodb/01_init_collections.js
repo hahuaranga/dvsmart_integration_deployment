@@ -36,12 +36,12 @@ try {
 }
 
 // =============================================
-// COLECCIÓN: archivo_index
+// COLECCIÓN: disorganized-files-index
 // =============================================
 
-if (!db.getCollectionNames().includes("archivo_index")) {
+if (!db.getCollectionNames().includes("disorganized-files-index")) {
     try {
-        db.createCollection("archivo_index", {
+        db.createCollection("disorganized-files-index", {
             validator: {
                 $jsonSchema: {
                     bsonType: "object",
@@ -84,29 +84,29 @@ if (!db.getCollectionNames().includes("archivo_index")) {
             validationLevel: "strict",
             validationAction: "error"
         });
-        print("✅ Colección 'archivo_index' creada con validación de esquema");
+        print("✅ Colección 'disorganized-files-index' creada con validación de esquema");
     } catch (e) {
-        print("❌ Error creando colección 'archivo_index': " + e);
+        print("❌ Error creando colección 'disorganized-files-index': " + e);
     }
 } else {
-    print("ℹ️  Colección 'archivo_index' ya existe");
+    print("ℹ️  Colección 'disorganized-files-index' ya existe");
 }
 
-// Índices para archivo_index
+// Índices para disorganized-files-index
 try {
-    db.archivo_index.createIndex({ "idUnico": 1 }, { unique: true, name: "idx_idUnico_unique" });
-    db.archivo_index.createIndex({ "rutaOrigen": 1 }, { name: "idx_rutaOrigen" });
-    db.archivo_index.createIndex({ "nombre": 1 }, { name: "idx_nombre" });
-    db.archivo_index.createIndex({ "mtime": -1 }, { name: "idx_mtime_desc" });
-    db.archivo_index.createIndex({ "indexadoEn": -1, "mtime": -1 }, { name: "idx_indexado_mtime" });
-    print("✅ Índices creados exitosamente en 'archivo_index'");
+    db.disorganized-files-index.createIndex({ "idUnico": 1 }, { unique: true, name: "idx_idUnico_unique" });
+    db.disorganized-files-index.createIndex({ "rutaOrigen": 1 }, { name: "idx_rutaOrigen" });
+    db.disorganized-files-index.createIndex({ "nombre": 1 }, { name: "idx_nombre" });
+    db.disorganized-files-index.createIndex({ "mtime": -1 }, { name: "idx_mtime_desc" });
+    db.disorganized-files-index.createIndex({ "indexadoEn": -1, "mtime": -1 }, { name: "idx_indexado_mtime" });
+    print("✅ Índices creados exitosamente en 'disorganized-files-index'");
 } catch (e) {
-    print("❌ Error creando índices en 'archivo_index': " + e);
+    print("❌ Error creando índices en 'disorganized-files-index': " + e);
 }
 
 // Inserción de documentos de ejemplo
 try {
-    db.archivo_index.insertMany([
+    db.disorganized-files-index.insertMany([
         {
             "idUnico": "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456",
             "rutaOrigen": "/home/testuser/upload/origin/dir1/documento1.pdf",
@@ -153,9 +153,9 @@ try {
             "indexadoEn": new Date()
         }
     ]);
-    print("✅ Documentos de ejemplo insertados en 'archivo_index': " + db.archivo_index.countDocuments());
+    print("✅ Documentos de ejemplo insertados en 'disorganized-files-index': " + db.disorganized-files-index.countDocuments());
 } catch (e) {
-    print("❌ Error insertando documentos en 'archivo_index': " + e);
+    print("❌ Error insertando documentos en 'disorganized-files-index': " + e);
 }
 
 // =============================================
@@ -245,8 +245,8 @@ try {
 
 // Inserción de documentos de ejemplo - VERSIÓN CORREGIDA
 try {
-    var idsExistentes = db.archivo_index.distinct("idUnico");
-    print("📋 IDs disponibles en archivo_index: " + idsExistentes.length);
+    var idsExistentes = db.disorganized-files-index.distinct("idUnico");
+    print("📋 IDs disponibles en disorganized-files-index: " + idsExistentes.length);
     
     // Documentos a insertar - SIN errorMessage cuando es null
     var documentosAInsertar = [
@@ -309,7 +309,7 @@ try {
         var resultado = db.processed_files.insertMany(documentosValidos);
         print("✅ Documentos insertados en 'processed_files': " + resultado.insertedCount);
     } else {
-        print("⚠️  No se insertaron documentos - IDs no coinciden con archivo_index");
+        print("⚠️  No se insertaron documentos - IDs no coinciden con disorganized-files-index");
     }
     
 } catch (e) {
@@ -326,9 +326,9 @@ print("========================================");
 print("📊 Base de datos: " + db.getName());
 print("📦 Colecciones: " + JSON.stringify(db.getCollectionNames()));
 print("");
-print("📁 archivo_index:");
-print("   🔍 Índices: " + db.archivo_index.getIndexes().length);
-print("   📄 Documentos: " + db.archivo_index.countDocuments());
+print("📁 disorganized-files-index:");
+print("   🔍 Índices: " + db.disorganized-files-index.getIndexes().length);
+print("   📄 Documentos: " + db.disorganized-files-index.countDocuments());
 print("");
 print("📁 processed_files:");
 print("   🔍 Índices: " + db.processed_files.getIndexes().length);
@@ -348,9 +348,9 @@ print("📊 Base de datos: " + db.getName());
 print("👤 Usuario aplicación: " + process.env.MONGO_USER);
 print("📦 Colecciones creadas: " + JSON.stringify(db.getCollectionNames()));
 print("");
-print("📁 Colección 'archivo_index':");
-print("   🔍 Índices: " + db.archivo_index.getIndexes().length);
-print("   📄 Documentos: " + db.archivo_index.countDocuments());
+print("📁 Colección 'disorganized-files-index':");
+print("   🔍 Índices: " + db.disorganized-files-index.getIndexes().length);
+print("   📄 Documentos: " + db.disorganized-files-index.countDocuments());
 print("");
 print("📁 Colección 'processed_files':");
 print("   🔍 Índices: " + db.processed_files.getIndexes().length);
@@ -365,9 +365,9 @@ print("========================================");
 
 print("\n=== CONSULTAS DE VERIFICACIÓN ===");
 
-// Verificar índices de archivo_index
-print("\n🔍 Índices en 'archivo_index':");
-db.archivo_index.getIndexes().forEach(function(index) {
+// Verificar índices de disorganized-files-index
+print("\n🔍 Índices en 'disorganized-files-index':");
+db.disorganized-files-index.getIndexes().forEach(function(index) {
     print("   - " + index.name + ": " + JSON.stringify(index.key));
 });
 
