@@ -4,16 +4,16 @@
 // =============================================
 
 // 1. Autenticación como administrador
-try {
-    db.getSiblingDB('admin').auth(
-        process.env.MONGO_INITDB_ROOT_USERNAME, 
-        process.env.MONGO_INITDB_ROOT_PASSWORD
-    );
-    print("✅ Autenticación como root exitosa");
-} catch (e) {
-    print("❌ Error en autenticación root: " + e);
-    quit(1);
-}
+//try {
+//    db.getSiblingDB('admin').auth(
+//        process.env.MONGO_INITDB_ROOT_USERNAME, 
+//        process.env.MONGO_INITDB_ROOT_PASSWORD
+//    );
+//    print("✅ Autenticación como root exitosa");
+//} catch (e) {
+//    print("❌ Error en autenticación root: " + e);
+//    quit(1);
+//}
 
 // 2. Creación/Selección de la base de datos
 const dbName = process.env.MONGO_INITDB_DATABASE;
