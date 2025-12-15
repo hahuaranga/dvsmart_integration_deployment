@@ -37,7 +37,6 @@ try {
 
 // =============================================
 // COLECCIÓN: archivo_index
-// Índice de archivos a reorganizar desde SFTP origen
 // =============================================
 
 if (!db.getCollectionNames().includes("archivo_index")) {
@@ -50,7 +49,7 @@ if (!db.getCollectionNames().includes("archivo_index")) {
                     properties: {
                         idUnico: {
                             bsonType: "string",
-                            description: "Identificador único del archivo (hash SHA-256 de ruta+nombre) - requerido"
+                            description: "Identificador único del archivo - requerido"
                         },
                         rutaOrigen: {
                             bsonType: "string",
@@ -73,7 +72,7 @@ if (!db.getCollectionNames().includes("archivo_index")) {
                         },
                         extension: {
                             bsonType: "string",
-                            description: "Extensión del archivo (.txt, .pdf, etc.) - opcional"
+                            description: "Extensión del archivo - opcional"
                         },
                         indexadoEn: {
                             bsonType: "date",
@@ -95,42 +94,17 @@ if (!db.getCollectionNames().includes("archivo_index")) {
 
 // Índices para archivo_index
 try {
-    // Índice único por idUnico
-    db.archivo_index.createIndex(
-        { "idUnico": 1 }, 
-        { unique: true, name: "idx_idUnico_unique" }
-    );
-    
-    // Índice por rutaOrigen (para búsquedas de path)
-    db.archivo_index.createIndex(
-        { "rutaOrigen": 1 }, 
-        { name: "idx_rutaOrigen" }
-    );
-    
-    // Índice por nombre (para búsquedas de archivos)
-    db.archivo_index.createIndex(
-        { "nombre": 1 }, 
-        { name: "idx_nombre" }
-    );
-    
-    // Índice por fecha de modificación (para filtros temporales)
-    db.archivo_index.createIndex(
-        { "mtime": -1 }, 
-        { name: "idx_mtime_desc" }
-    );
-    
-    // Índice compuesto para consultas comunes
-    db.archivo_index.createIndex(
-        { "indexadoEn": -1, "mtime": -1 }, 
-        { name: "idx_indexado_mtime" }
-    );
-    
+    db.archivo_index.createIndex({ "idUnico": 1 }, { unique: true, name: "idx_idUnico_unique" });
+    db.archivo_index.createIndex({ "rutaOrigen": 1 }, { name: "idx_rutaOrigen" });
+    db.archivo_index.createIndex({ "nombre": 1 }, { name: "idx_nombre" });
+    db.archivo_index.createIndex({ "mtime": -1 }, { name: "idx_mtime_desc" });
+    db.archivo_index.createIndex({ "indexadoEn": -1, "mtime": -1 }, { name: "idx_indexado_mtime" });
     print("✅ Índices creados exitosamente en 'archivo_index'");
 } catch (e) {
     print("❌ Error creando índices en 'archivo_index': " + e);
 }
 
-// Inserción de documentos de ejemplo en archivo_index
+// Inserción de documentos de ejemplo
 try {
     db.archivo_index.insertMany([
         {
@@ -138,7 +112,7 @@ try {
             "rutaOrigen": "/home/testuser/upload/origin/dir1/documento1.pdf",
             "nombre": "documento1.pdf",
             "mtime": new Date("2025-12-10T10:30:00.000Z"),
-            "tamanio": NumberLong(1048576),
+            "tamanio": NumberLong("1048576"),
             "extension": ".pdf",
             "indexadoEn": new Date()
         },
@@ -147,7 +121,7 @@ try {
             "rutaOrigen": "/home/testuser/upload/origin/dir1/imagen1.jpg",
             "nombre": "imagen1.jpg",
             "mtime": new Date("2025-12-11T14:45:00.000Z"),
-            "tamanio": NumberLong(524288),
+            "tamanio": NumberLong("524288"),
             "extension": ".jpg",
             "indexadoEn": new Date()
         },
@@ -156,7 +130,7 @@ try {
             "rutaOrigen": "/home/testuser/upload/origin/dir2/reporte.xlsx",
             "nombre": "reporte.xlsx",
             "mtime": new Date("2025-12-12T09:15:00.000Z"),
-            "tamanio": NumberLong(2097152),
+            "tamanio": NumberLong("2097152"),
             "extension": ".xlsx",
             "indexadoEn": new Date()
         },
@@ -165,7 +139,7 @@ try {
             "rutaOrigen": "/home/testuser/upload/origin/dir3/video.mp4",
             "nombre": "video.mp4",
             "mtime": new Date("2025-12-13T16:20:00.000Z"),
-            "tamanio": NumberLong(104857600),
+            "tamanio": NumberLong("104857600"),
             "extension": ".mp4",
             "indexadoEn": new Date()
         },
@@ -174,7 +148,7 @@ try {
             "rutaOrigen": "/home/testuser/upload/origin/notas.txt",
             "nombre": "notas.txt",
             "mtime": new Date("2025-12-13T18:00:00.000Z"),
-            "tamanio": NumberLong(4096),
+            "tamanio": NumberLong("4096"),
             "extension": ".txt",
             "indexadoEn": new Date()
         }
@@ -185,8 +159,7 @@ try {
 }
 
 // =============================================
-// COLECCIÓN: processed_files
-// Auditoría de archivos procesados (éxitos y fallos)
+// COLECCIÓN: processed_files - ESQUEMA CORREGIDO
 // =============================================
 
 if (!db.getCollectionNames().includes("processed_files")) {
@@ -199,7 +172,7 @@ if (!db.getCollectionNames().includes("processed_files")) {
                     properties: {
                         idUnico: {
                             bsonType: "string",
-                            description: "Identificador único del archivo (debe coincidir con archivo_index) - requerido"
+                            description: "Identificador único del archivo - requerido"
                         },
                         rutaOrigen: {
                             bsonType: "string",
@@ -209,7 +182,7 @@ if (!db.getCollectionNames().includes("processed_files")) {
                         rutaDestino: {
                             bsonType: "string",
                             minLength: 1,
-                            description: "Path calculado en SFTP destino (hash partitioned) - requerido"
+                            description: "Path calculado en SFTP destino - requerido"
                         },
                         nombre: {
                             bsonType: "string",
@@ -219,29 +192,30 @@ if (!db.getCollectionNames().includes("processed_files")) {
                         status: {
                             bsonType: "string",
                             enum: ["SUCCESS", "FAILED"],
-                            description: "Estado del procesamiento: SUCCESS o FAILED - requerido"
+                            description: "Estado del procesamiento - requerido"
                         },
                         processedAt: {
                             bsonType: "date",
                             description: "Timestamp de cuando se procesó el archivo - requerido"
                         },
+                        // CORRECCIÓN: Permitir null o string
                         errorMessage: {
-                            bsonType: "string",
-                            description: "Mensaje de error (solo si status=FAILED) - opcional"
+                            bsonType: ["string", "null"],
+                            description: "Mensaje de error (solo si status=FAILED)"
                         },
                         jobExecutionId: {
                             bsonType: "long",
-                            description: "ID de la ejecución del job batch - opcional"
+                            description: "ID de la ejecución del job batch"
                         },
                         duracionMs: {
                             bsonType: "long",
                             minimum: 0,
-                            description: "Duración del procesamiento en milisegundos - opcional"
+                            description: "Duración del procesamiento en milisegundos"
                         },
                         intentos: {
                             bsonType: "int",
                             minimum: 1,
-                            description: "Número de intentos de procesamiento - opcional"
+                            description: "Número de intentos de procesamiento"
                         }
                     }
                 }
@@ -259,44 +233,23 @@ if (!db.getCollectionNames().includes("processed_files")) {
 
 // Índices para processed_files
 try {
-    // Índice único por idUnico
-    db.processed_files.createIndex(
-        { "idUnico": 1 }, 
-        { unique: true, name: "idx_idUnico_unique" }
-    );
-    
-    // Índice compuesto por status y fecha (para consultas de archivos fallidos/exitosos)
-    db.processed_files.createIndex(
-        { "status": 1, "processedAt": -1 }, 
-        { name: "idx_status_processedAt" }
-    );
-    
-    // Índice por fecha de procesamiento (para filtros temporales)
-    db.processed_files.createIndex(
-        { "processedAt": -1 }, 
-        { name: "idx_processedAt_desc" }
-    );
-    
-    // Índice por jobExecutionId (para consultas por job)
-    db.processed_files.createIndex(
-        { "jobExecutionId": 1 }, 
-        { name: "idx_jobExecutionId" }
-    );
-    
-    // Índice por rutaDestino (para verificar archivos en destino)
-    db.processed_files.createIndex(
-        { "rutaDestino": 1 }, 
-        { name: "idx_rutaDestino" }
-    );
-    
+    db.processed_files.createIndex({ "idUnico": 1 }, { unique: true, name: "idx_idUnico_unique" });
+    db.processed_files.createIndex({ "status": 1, "processedAt": -1 }, { name: "idx_status_processedAt" });
+    db.processed_files.createIndex({ "processedAt": -1 }, { name: "idx_processedAt_desc" });
+    db.processed_files.createIndex({ "jobExecutionId": 1 }, { name: "idx_jobExecutionId" });
+    db.processed_files.createIndex({ "rutaDestino": 1 }, { name: "idx_rutaDestino" });
     print("✅ Índices creados exitosamente en 'processed_files'");
 } catch (e) {
     print("❌ Error creando índices en 'processed_files': " + e);
 }
 
-// Inserción de documentos de ejemplo en processed_files
+// Inserción de documentos de ejemplo - VERSIÓN CORREGIDA
 try {
-    db.processed_files.insertMany([
+    var idsExistentes = db.archivo_index.distinct("idUnico");
+    print("📋 IDs disponibles en archivo_index: " + idsExistentes.length);
+    
+    // Documentos a insertar - SIN errorMessage cuando es null
+    var documentosAInsertar = [
         {
             "idUnico": "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456",
             "rutaOrigen": "/home/testuser/upload/origin/dir1/documento1.pdf",
@@ -304,9 +257,9 @@ try {
             "nombre": "documento1.pdf",
             "status": "SUCCESS",
             "processedAt": new Date("2025-12-13T22:35:10.123Z"),
-            "errorMessage": null,
-            "jobExecutionId": NumberLong(1),
-            "duracionMs": NumberLong(1234),
+            // NO incluir errorMessage cuando es null
+            "jobExecutionId": NumberLong("1"),
+            "duracionMs": NumberLong("1234"),
             "intentos": 1
         },
         {
@@ -316,9 +269,9 @@ try {
             "nombre": "imagen1.jpg",
             "status": "SUCCESS",
             "processedAt": new Date("2025-12-13T22:35:15.456Z"),
-            "errorMessage": null,
-            "jobExecutionId": NumberLong(1),
-            "duracionMs": NumberLong(890),
+            // NO incluir errorMessage cuando es null
+            "jobExecutionId": NumberLong("1"),
+            "duracionMs": NumberLong("890"),
             "intentos": 1
         },
         {
@@ -329,8 +282,8 @@ try {
             "status": "FAILED",
             "processedAt": new Date("2025-12-13T22:35:20.789Z"),
             "errorMessage": "Failed to read file from origin SFTP: Connection timeout",
-            "jobExecutionId": NumberLong(1),
-            "duracionMs": NumberLong(30000),
+            "jobExecutionId": NumberLong("1"),
+            "duracionMs": NumberLong("30000"),
             "intentos": 3
         },
         {
@@ -340,16 +293,49 @@ try {
             "nombre": "video.mp4",
             "status": "SUCCESS",
             "processedAt": new Date("2025-12-13T22:36:45.123Z"),
-            "errorMessage": null,
-            "jobExecutionId": NumberLong(1),
-            "duracionMs": NumberLong(45000),
+            // NO incluir errorMessage cuando es null
+            "jobExecutionId": NumberLong("1"),
+            "duracionMs": NumberLong("45000"),
             "intentos": 1
         }
-    ]);
-    print("✅ Documentos de ejemplo insertados en 'processed_files': " + db.processed_files.countDocuments());
+    ];
+    
+    // Filtrar documentos cuyos idUnico existen
+    var documentosValidos = documentosAInsertar.filter(function(doc) {
+        return idsExistentes.includes(doc.idUnico);
+    });
+    
+    if (documentosValidos.length > 0) {
+        var resultado = db.processed_files.insertMany(documentosValidos);
+        print("✅ Documentos insertados en 'processed_files': " + resultado.insertedCount);
+    } else {
+        print("⚠️  No se insertaron documentos - IDs no coinciden con archivo_index");
+    }
+    
 } catch (e) {
     print("❌ Error insertando documentos en 'processed_files': " + e);
 }
+
+// =============================================
+// VERIFICACIÓN FINAL
+// =============================================
+
+print("\n========================================");
+print("=== RESUMEN DE INICIALIZACIÓN ===");
+print("========================================");
+print("📊 Base de datos: " + db.getName());
+print("📦 Colecciones: " + JSON.stringify(db.getCollectionNames()));
+print("");
+print("📁 archivo_index:");
+print("   🔍 Índices: " + db.archivo_index.getIndexes().length);
+print("   📄 Documentos: " + db.archivo_index.countDocuments());
+print("");
+print("📁 processed_files:");
+print("   🔍 Índices: " + db.processed_files.getIndexes().length);
+print("   📄 Documentos: " + db.processed_files.countDocuments());
+print("========================================");
+
+print("\n✅ Script ejecutado exitosamente");
 
 // =============================================
 // VERIFICACIÓN FINAL
