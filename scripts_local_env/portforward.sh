@@ -1,20 +1,14 @@
 #!/bin/bash
 
 # Archivo donde se guardarán los PID de los procesos en background
-PID_FILE="/tmp/funhogar-portforwards.pid"
+PID_FILE="/tmp/dvsmart-portforwards.pid"
 
 # Lista de comandos port-forward
 COMMANDS=(
-  "kubectl port-forward svc/funhogar-support 30050:8080 -n funhogar"
-  "kubectl port-forward svc/funhogar-event-api 30051:8080 -n funhogar"
-  "kubectl port-forward svc/funhogar-mongodb 30052:27017 -n funhogar"
-  "kubectl port-forward svc/funhogar-postgresql 30053:5432 -n funhogar"
-  "kubectl port-forward svc/funhogar-rabbitmq 30054:5672 -n funhogar"
-  "kubectl port-forward svc/funhogar-rabbitmq 30055:15672 -n funhogar"
-  "kubectl port-forward svc/funhogar-sbi-rest-adapter 30056:8080 -n funhogar"
-  "kubectl port-forward svc/funhogar-sbi-ws-adapter 30057:8080 -n funhogar"
-  "kubectl port-forward svc/funhogar-agenda-api 30058:8080 -n funhogar"
-  "kubectl port-forward svc/funhogar-nbi-adapter 30059:8080 -n funhogar"
+"kubectl port-forward svc/dvsmart-catalog-mongodb 30000:27017 -n dvsmart"
+"kubectl port-forward svc/dvsmart-destination-filesystem-sftp 30001:22 -n dvsmart"
+"kubectl port-forward svc/dvsmart-source-filesystem-sftp 30002:22 -n dvsmart"
+"kubectl port-forward svc/dvsmart-reorganization-api 30003:8080 -n dvsmart"
 )
 
 start() {
