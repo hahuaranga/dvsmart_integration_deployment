@@ -8,7 +8,7 @@ LABEL description="This example Dockerfile installs MongoDB for development purp
 ENV MONGO_INITDB_ROOT_USERNAME=admin
 ENV MONGO_INITDB_ROOT_PASSWORD=password
 ENV MONGO_INITDB_DATABASE=dvsmart-ms
-ENV MONGO_USER=dvsmart_ms
+ENV MONGO_USER=dvsmart_user
 ENV MONGO_PASSWORD=eoQQqfTyMd
 
 # Copiar scripts de inicialización personalizados
