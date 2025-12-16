@@ -159,12 +159,12 @@ try {
 }
 
 // =============================================
-// COLECCIÓN: processed_files - ESQUEMA CORREGIDO
+// COLECCIÓN: organized-files-index - ESQUEMA CORREGIDO
 // =============================================
 
-if (!db.getCollectionNames().includes("processed_files")) {
+if (!db.getCollectionNames().includes("organized-files-index")) {
     try {
-        db.createCollection("processed_files", {
+        db.createCollection("organized-files-index", {
             validator: {
                 $jsonSchema: {
                     bsonType: "object",
@@ -223,24 +223,24 @@ if (!db.getCollectionNames().includes("processed_files")) {
             validationLevel: "strict",
             validationAction: "error"
         });
-        print("✅ Colección 'processed_files' creada con validación de esquema");
+        print("✅ Colección 'organized-files-index' creada con validación de esquema");
     } catch (e) {
-        print("❌ Error creando colección 'processed_files': " + e);
+        print("❌ Error creando colección 'organized-files-index': " + e);
     }
 } else {
-    print("ℹ️  Colección 'processed_files' ya existe");
+    print("ℹ️  Colección 'organized-files-index' ya existe");
 }
 
-// Índices para processed_files
+// Índices para organized-files-index
 try {
-    db.processed_files.createIndex({ "idUnico": 1 }, { unique: true, name: "idx_idUnico_unique" });
-    db.processed_files.createIndex({ "status": 1, "processedAt": -1 }, { name: "idx_status_processedAt" });
-    db.processed_files.createIndex({ "processedAt": -1 }, { name: "idx_processedAt_desc" });
-    db.processed_files.createIndex({ "jobExecutionId": 1 }, { name: "idx_jobExecutionId" });
-    db.processed_files.createIndex({ "rutaDestino": 1 }, { name: "idx_rutaDestino" });
-    print("✅ Índices creados exitosamente en 'processed_files'");
+    db.organized-files-index.createIndex({ "idUnico": 1 }, { unique: true, name: "idx_idUnico_unique" });
+    db.organized-files-index.createIndex({ "status": 1, "processedAt": -1 }, { name: "idx_status_processedAt" });
+    db.organized-files-index.createIndex({ "processedAt": -1 }, { name: "idx_processedAt_desc" });
+    db.organized-files-index.createIndex({ "jobExecutionId": 1 }, { name: "idx_jobExecutionId" });
+    db.organized-files-index.createIndex({ "rutaDestino": 1 }, { name: "idx_rutaDestino" });
+    print("✅ Índices creados exitosamente en 'organized-files-index'");
 } catch (e) {
-    print("❌ Error creando índices en 'processed_files': " + e);
+    print("❌ Error creando índices en 'organized-files-index': " + e);
 }
 
 // Inserción de documentos de ejemplo - VERSIÓN CORREGIDA
@@ -306,14 +306,14 @@ try {
     });
     
     if (documentosValidos.length > 0) {
-        var resultado = db.processed_files.insertMany(documentosValidos);
-        print("✅ Documentos insertados en 'processed_files': " + resultado.insertedCount);
+        var resultado = db.organized-files-index.insertMany(documentosValidos);
+        print("✅ Documentos insertados en 'organized-files-index': " + resultado.insertedCount);
     } else {
         print("⚠️  No se insertaron documentos - IDs no coinciden con disorganized-files-index");
     }
     
 } catch (e) {
-    print("❌ Error insertando documentos en 'processed_files': " + e);
+    print("❌ Error insertando documentos en 'organized-files-index': " + e);
 }
 
 // =============================================
@@ -330,9 +330,9 @@ print("📁 disorganized-files-index:");
 print("   🔍 Índices: " + db.disorganized-files-index.getIndexes().length);
 print("   📄 Documentos: " + db.disorganized-files-index.countDocuments());
 print("");
-print("📁 processed_files:");
-print("   🔍 Índices: " + db.processed_files.getIndexes().length);
-print("   📄 Documentos: " + db.processed_files.countDocuments());
+print("📁 organized-files-index:");
+print("   🔍 Índices: " + db.organized-files-index.getIndexes().length);
+print("   📄 Documentos: " + db.organized-files-index.countDocuments());
 print("========================================");
 
 print("\n✅ Script ejecutado exitosamente");
@@ -352,9 +352,9 @@ print("📁 Colección 'disorganized-files-index':");
 print("   🔍 Índices: " + db.disorganized-files-index.getIndexes().length);
 print("   📄 Documentos: " + db.disorganized-files-index.countDocuments());
 print("");
-print("📁 Colección 'processed_files':");
-print("   🔍 Índices: " + db.processed_files.getIndexes().length);
-print("   📄 Documentos: " + db.processed_files.countDocuments());
+print("📁 Colección 'organized-files-index':");
+print("   🔍 Índices: " + db.organized-files-index.getIndexes().length);
+print("   📄 Documentos: " + db.organized-files-index.countDocuments());
 print("");
 print("✅ Inicialización completada exitosamente");
 print("========================================");
@@ -371,15 +371,15 @@ db.disorganized-files-index.getIndexes().forEach(function(index) {
     print("   - " + index.name + ": " + JSON.stringify(index.key));
 });
 
-// Verificar índices de processed_files
-print("\n🔍 Índices en 'processed_files':");
-db.processed_files.getIndexes().forEach(function(index) {
+// Verificar índices de organized-files-index
+print("\n🔍 Índices en 'organized-files-index':");
+db.organized-files-index.getIndexes().forEach(function(index) {
     print("   - " + index.name + ": " + JSON.stringify(index.key));
 });
 
 // Estadísticas de archivos procesados
 print("\n📊 Estadísticas de procesamiento:");
-var stats = db.processed_files.aggregate([
+var stats = db.organized-files-index.aggregate([
     {
         $group: {
             _id: "$status",
