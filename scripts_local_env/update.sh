@@ -5,9 +5,9 @@
 IMAGE_LIST=(
 			"dvsmart-source-filesystem-sftp"
 			"dvsmart-destination-filesystem-sftp"
-			"dvsmart_reorganization_api"
+			"dvsmart-reorganization-api"
 			"dvsmart-catalog-mongodb"
-			"dvsmart_indexing_api"
+			"dvsmart-indexing-api"
 			)
 BASE_DIR=dvsmart_integration_helm
 NAMESPACE=dvsmart
