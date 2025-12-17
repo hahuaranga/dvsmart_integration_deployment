@@ -10,6 +10,7 @@
 
 	<modules>
 		<module>../dvsmart_reorganization_api</module>
+		<module>../dvsmart_indexing_api</module>
 	</modules>
 
 	<properties>
