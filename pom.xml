@@ -14,6 +14,7 @@
 
 	<properties>
 		<dvsmart_reorganization_api_jar>..\dvsmart_reorganization_api\target\dvsmart_reorganization_api.jar</dvsmart_reorganization_api_jar>
+		<dvsmart_indexing_api_jar>..\dvsmart_indexing_api\target\dvsmart_indexing_api.jar</dvsmart_indexing_api_jar>
 	</properties>
 
 	<build>
@@ -44,6 +45,21 @@
 							</target>
 						</configuration>
 					</execution>
+					
+					<!-- dvsmart_indexing_api -->
+					<execution>
+						<id>cp-dvsmart_indexing_api_jar</id>
+						<phase>package</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<target>
+								<copy file="${dvsmart_indexing_api_jar}"
+									todir="${basedir}/docker-env/dvsmart_indexing_api/deployments" />
+							</target>
+						</configuration>
+					</execution>					
 
 				</executions>
 
