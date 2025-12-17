@@ -9,6 +9,7 @@ COMMANDS=(
 "kubectl port-forward svc/dvsmart-destination-filesystem-sftp 30001:22 -n dvsmart"
 "kubectl port-forward svc/dvsmart-source-filesystem-sftp 30002:22 -n dvsmart"
 "kubectl port-forward svc/dvsmart-reorganization-api 30003:8080 -n dvsmart"
+"kubectl port-forward svc/dvsmart-indexing-api 30004:8080 -n dvsmart"
 )
 
 start() {

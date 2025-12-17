@@ -11,7 +11,7 @@ echo "Starting Git Pull on main repositories..."
 pushd ../.. 
 
 # Rutas relativas al nuevo directorio actual (el raíz: ~/tools/docVaultSmart)
-REPOS=("dvsmart_integration_deployment" "dvsmart_integration_helm" "dvsmart_reorganization_api")
+REPOS=("dvsmart_integration_deployment" "dvsmart_integration_helm" "dvsmart_reorganization_api" "dvsmart_indexing_api")
 
 for REPO in "${REPOS[@]}"; do
     if [ -d "$REPO" ]; then
