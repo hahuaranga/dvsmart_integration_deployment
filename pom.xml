@@ -42,7 +42,7 @@
 						<configuration>
 							<target>
 								<copy file="${dvsmart_reorganization_api_jar}"
-									todir="${basedir}/docker-env/dvsmart_reorganization_api/deployments" />
+									todir="${basedir}/docker-env/dvsmart-reorganization-api/deployments" />
 							</target>
 						</configuration>
 					</execution>
@@ -57,7 +57,7 @@
 						<configuration>
 							<target>
 								<copy file="${dvsmart_indexing_api_jar}"
-									todir="${basedir}/docker-env/dvsmart_indexing_api/deployments" />
+									todir="${basedir}/docker-env/dvsmart-indexing-api/deployments" />
 							</target>
 						</configuration>
 					</execution>					
