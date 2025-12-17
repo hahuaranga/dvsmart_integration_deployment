@@ -35,6 +35,10 @@ try {
     print("ℹ️  Usuario ya existe o error: " + e);
 }
 
+// Variables para facilitar el acceso a las colecciones
+var disorganizedFiles = db["disorganized-files-index"];
+var organizedFiles = db["organized-files-index"];
+
 // =============================================
 // COLECCIÓN: disorganized-files-index
 // =============================================
@@ -92,21 +96,21 @@ if (!db.getCollectionNames().includes("disorganized-files-index")) {
     print("ℹ️  Colección 'disorganized-files-index' ya existe");
 }
 
-// Índices para disorganized-files-index
+// Índices para disorganized-files-index - CORREGIDO
 try {
-    db.disorganized-files-index.createIndex({ "idUnico": 1 }, { unique: true, name: "idx_idUnico_unique" });
-    db.disorganized-files-index.createIndex({ "rutaOrigen": 1 }, { name: "idx_rutaOrigen" });
-    db.disorganized-files-index.createIndex({ "nombre": 1 }, { name: "idx_nombre" });
-    db.disorganized-files-index.createIndex({ "mtime": -1 }, { name: "idx_mtime_desc" });
-    db.disorganized-files-index.createIndex({ "indexadoEn": -1, "mtime": -1 }, { name: "idx_indexado_mtime" });
+    disorganizedFiles.createIndex({ "idUnico": 1 }, { unique: true, name: "idx_idUnico_unique" });
+    disorganizedFiles.createIndex({ "rutaOrigen": 1 }, { name: "idx_rutaOrigen" });
+    disorganizedFiles.createIndex({ "nombre": 1 }, { name: "idx_nombre" });
+    disorganizedFiles.createIndex({ "mtime": -1 }, { name: "idx_mtime_desc" });
+    disorganizedFiles.createIndex({ "indexadoEn": -1, "mtime": -1 }, { name: "idx_indexado_mtime" });
     print("✅ Índices creados exitosamente en 'disorganized-files-index'");
 } catch (e) {
     print("❌ Error creando índices en 'disorganized-files-index': " + e);
 }
 
-// Inserción de documentos de ejemplo
+// Inserción de documentos de ejemplo - CORREGIDO
 try {
-    db.disorganized-files-index.insertMany([
+    disorganizedFiles.insertMany([
         {
             "idUnico": "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456",
             "rutaOrigen": "/home/testuser/upload/origin/dir1/documento1.pdf",
@@ -153,7 +157,7 @@ try {
             "indexadoEn": new Date()
         }
     ]);
-    print("✅ Documentos de ejemplo insertados en 'disorganized-files-index': " + db.disorganized-files-index.countDocuments());
+    print("✅ Documentos de ejemplo insertados en 'disorganized-files-index': " + disorganizedFiles.countDocuments());
 } catch (e) {
     print("❌ Error insertando documentos en 'disorganized-files-index': " + e);
 }
@@ -198,7 +202,6 @@ if (!db.getCollectionNames().includes("organized-files-index")) {
                             bsonType: "date",
                             description: "Timestamp de cuando se procesó el archivo - requerido"
                         },
-                        // CORRECCIÓN: Permitir null o string
                         errorMessage: {
                             bsonType: ["string", "null"],
                             description: "Mensaje de error (solo si status=FAILED)"
@@ -231,13 +234,13 @@ if (!db.getCollectionNames().includes("organized-files-index")) {
     print("ℹ️  Colección 'organized-files-index' ya existe");
 }
 
-// Índices para organized-files-index
+// Índices para organized-files-index - CORREGIDO
 try {
-    db.organized-files-index.createIndex({ "idUnico": 1 }, { unique: true, name: "idx_idUnico_unique" });
-    db.organized-files-index.createIndex({ "status": 1, "processedAt": -1 }, { name: "idx_status_processedAt" });
-    db.organized-files-index.createIndex({ "processedAt": -1 }, { name: "idx_processedAt_desc" });
-    db.organized-files-index.createIndex({ "jobExecutionId": 1 }, { name: "idx_jobExecutionId" });
-    db.organized-files-index.createIndex({ "rutaDestino": 1 }, { name: "idx_rutaDestino" });
+    organizedFiles.createIndex({ "idUnico": 1 }, { unique: true, name: "idx_idUnico_unique" });
+    organizedFiles.createIndex({ "status": 1, "processedAt": -1 }, { name: "idx_status_processedAt" });
+    organizedFiles.createIndex({ "processedAt": -1 }, { name: "idx_processedAt_desc" });
+    organizedFiles.createIndex({ "jobExecutionId": 1 }, { name: "idx_jobExecutionId" });
+    organizedFiles.createIndex({ "rutaDestino": 1 }, { name: "idx_rutaDestino" });
     print("✅ Índices creados exitosamente en 'organized-files-index'");
 } catch (e) {
     print("❌ Error creando índices en 'organized-files-index': " + e);
@@ -245,10 +248,9 @@ try {
 
 // Inserción de documentos de ejemplo - VERSIÓN CORREGIDA
 try {
-    var idsExistentes = db.disorganized-files-index.distinct("idUnico");
+    var idsExistentes = disorganizedFiles.distinct("idUnico");
     print("📋 IDs disponibles en disorganized-files-index: " + idsExistentes.length);
     
-    // Documentos a insertar - SIN errorMessage cuando es null
     var documentosAInsertar = [
         {
             "idUnico": "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456",
@@ -300,13 +302,12 @@ try {
         }
     ];
     
-    // Filtrar documentos cuyos idUnico existen
     var documentosValidos = documentosAInsertar.filter(function(doc) {
         return idsExistentes.includes(doc.idUnico);
     });
     
     if (documentosValidos.length > 0) {
-        var resultado = db.organized-files-index.insertMany(documentosValidos);
+        var resultado = organizedFiles.insertMany(documentosValidos);
         print("✅ Documentos insertados en 'organized-files-index': " + resultado.insertedCount);
     } else {
         print("⚠️  No se insertaron documentos - IDs no coinciden con disorganized-files-index");
@@ -324,37 +325,16 @@ print("\n========================================");
 print("=== RESUMEN DE INICIALIZACIÓN ===");
 print("========================================");
 print("📊 Base de datos: " + db.getName());
+print("👤 Usuario aplicación: " + process.env.MONGO_USER);
 print("📦 Colecciones: " + JSON.stringify(db.getCollectionNames()));
 print("");
-print("📁 disorganized-files-index:");
-print("   🔍 Índices: " + db.disorganized-files-index.getIndexes().length);
-print("   📄 Documentos: " + db.disorganized-files-index.countDocuments());
-print("");
-print("📁 organized-files-index:");
-print("   🔍 Índices: " + db.organized-files-index.getIndexes().length);
-print("   📄 Documentos: " + db.organized-files-index.countDocuments());
-print("========================================");
-
-print("\n✅ Script ejecutado exitosamente");
-
-// =============================================
-// VERIFICACIÓN FINAL
-// =============================================
-
-print("\n========================================");
-print("=== RESUMEN DE INICIALIZACIÓN ===");
-print("========================================");
-print("📊 Base de datos: " + db.getName());
-print("👤 Usuario aplicación: " + process.env.MONGO_USER);
-print("📦 Colecciones creadas: " + JSON.stringify(db.getCollectionNames()));
-print("");
 print("📁 Colección 'disorganized-files-index':");
-print("   🔍 Índices: " + db.disorganized-files-index.getIndexes().length);
-print("   📄 Documentos: " + db.disorganized-files-index.countDocuments());
+print("   🔍 Índices: " + disorganizedFiles.getIndexes().length);
+print("   📄 Documentos: " + disorganizedFiles.countDocuments());
 print("");
 print("📁 Colección 'organized-files-index':");
-print("   🔍 Índices: " + db.organized-files-index.getIndexes().length);
-print("   📄 Documentos: " + db.organized-files-index.countDocuments());
+print("   🔍 Índices: " + organizedFiles.getIndexes().length);
+print("   📄 Documentos: " + organizedFiles.countDocuments());
 print("");
 print("✅ Inicialización completada exitosamente");
 print("========================================");
@@ -367,19 +347,19 @@ print("\n=== CONSULTAS DE VERIFICACIÓN ===");
 
 // Verificar índices de disorganized-files-index
 print("\n🔍 Índices en 'disorganized-files-index':");
-db.disorganized-files-index.getIndexes().forEach(function(index) {
+disorganizedFiles.getIndexes().forEach(function(index) {
     print("   - " + index.name + ": " + JSON.stringify(index.key));
 });
 
 // Verificar índices de organized-files-index
 print("\n🔍 Índices en 'organized-files-index':");
-db.organized-files-index.getIndexes().forEach(function(index) {
+organizedFiles.getIndexes().forEach(function(index) {
     print("   - " + index.name + ": " + JSON.stringify(index.key));
 });
 
 // Estadísticas de archivos procesados
 print("\n📊 Estadísticas de procesamiento:");
-var stats = db.organized-files-index.aggregate([
+var stats = organizedFiles.aggregate([
     {
         $group: {
             _id: "$status",
