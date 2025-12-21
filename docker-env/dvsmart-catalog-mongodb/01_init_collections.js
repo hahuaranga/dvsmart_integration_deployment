@@ -35,286 +35,260 @@ try {
     print("ℹ️  Usuario ya existe o error: " + e);
 }
 
-// Variables para facilitar el acceso a las colecciones
-var disorganizedFiles = db["disorganized-files-index"];
-var organizedFiles = db["organized-files-index"];
-
 // =============================================
-// COLECCIÓN: disorganized-files-index
+// COLECCIÓN: files_index
 // =============================================
 
-if (!db.getCollectionNames().includes("disorganized-files-index")) {
+if (!db.getCollectionNames().includes("files_index")) {
     try {
-        db.createCollection("disorganized-files-index", {
-            validator: {
-                $jsonSchema: {
-                    bsonType: "object",
-                    required: ["idUnico", "rutaOrigen", "nombre", "mtime"],
-                    properties: {
-                        idUnico: {
-                            bsonType: "string",
-                            description: "Identificador único del archivo - requerido"
-                        },
-                        rutaOrigen: {
-                            bsonType: "string",
-                            minLength: 1,
-                            description: "Path completo del archivo en SFTP origen - requerido"
-                        },
-                        nombre: {
-                            bsonType: "string",
-                            minLength: 1,
-                            description: "Nombre del archivo con extensión - requerido"
-                        },
-                        mtime: {
-                            bsonType: "date",
-                            description: "Fecha de última modificación del archivo - requerido"
-                        },
-                        tamanio: {
-                            bsonType: "long",
-                            minimum: 0,
-                            description: "Tamaño del archivo en bytes - opcional"
-                        },
-                        extension: {
-                            bsonType: "string",
-                            description: "Extensión del archivo - opcional"
-                        },
-                        indexadoEn: {
-                            bsonType: "date",
-                            description: "Fecha en que el archivo fue indexado - opcional"
-                        }
-                    }
-                }
-            },
-            validationLevel: "strict",
-            validationAction: "error"
-        });
-        print("✅ Colección 'disorganized-files-index' creada con validación de esquema");
+		db.createCollection("files_index", {
+		  validator: {
+		    $jsonSchema: {
+		      bsonType: "object",
+		      required: ["idUnico", "sourcePath", "fileName", "indexing_status", "reorg_status"],
+		      properties: {
+		        // Identificación
+		        idUnico: {
+		          bsonType: "string",
+		          description: "SHA-256 hash único del archivo"
+		        },
+		        
+		        // Metadata del archivo
+		        sourcePath: {
+		          bsonType: "string",
+		          description: "Ruta completa en SFTP origen"
+		        },
+		        fileName: {
+		          bsonType: "string",
+		          description: "Nombre del archivo"
+		        },
+		        extension: {
+		          bsonType: "string",
+		          description: "Extensión (.pdf, .docx, etc.)"
+		        },
+		        fileSize: {
+		          bsonType: "long",
+		          description: "Tamaño en bytes"
+		        },
+		        lastModificationDate: {
+		          bsonType: "date",
+		          description: "Fecha de última modificación del archivo"
+		        },
+		        
+		        // Control de indexación
+		        indexing_status: {
+		          enum: ["PENDING", "COMPLETED", "FAILED"],
+		          description: "Estado de la fase de indexación"
+		        },
+		        indexing_indexedAt: {
+		          bsonType: ["date", "null"],
+		          description: "Fecha de indexación"
+		        },
+		        indexing_errorDescription: {
+		          bsonType: ["string", "null"],
+		          description: "Descripción del error en indexación"
+		        },
+		        
+		        // Control de reorganización
+		        reorg_status: {
+		          enum: ["PENDING", "PROCESSING", "SUCCESS", "FAILED", "SKIPPED"],
+		          description: "Estado de la reorganización"
+		        },
+		        reorg_destinationPath: {
+		          bsonType: ["string", "null"],
+		          description: "Ruta en SFTP destino"
+		        },
+		        reorg_reorganizedAt: {
+		          bsonType: ["date", "null"],
+		          description: "Fecha de reorganización exitosa"
+		        },
+		        reorg_jobExecutionId: {
+		          bsonType: ["long", "null"],
+		          description: "ID del job de Spring Batch"
+		        },
+		        reorg_durationMs: {
+		          bsonType: ["long", "null"],
+		          description: "Duración de la transferencia en ms"
+		        },
+		        reorg_attempts: {
+		          bsonType: "int",
+		          description: "Número de intentos de reorganización"
+		        },
+		        reorg_errorDescription: {
+		          bsonType: ["string", "null"],
+		          description: "Descripción del error en reorganización"
+		        },
+		        reorg_lastAttemptAt: {
+		          bsonType: ["date", "null"],
+		          description: "Fecha del último intento"
+		        }
+		      }
+		    }
+		  },
+		  validationLevel: "moderate",  // Permite updates parciales
+		  validationAction: "error"      // Rechaza documentos inválidos
+		})
+        print("✅ Colección 'files_index' creada con validación de esquema");
     } catch (e) {
-        print("❌ Error creando colección 'disorganized-files-index': " + e);
+        print("❌ Error creando colección 'files_index': " + e);
     }
 } else {
-    print("ℹ️  Colección 'disorganized-files-index' ya existe");
+    print("ℹ️  Colección 'files_index' ya existe");
 }
 
-// Índices para disorganized-files-index - CORREGIDO
+// Índices para files_index
 try {
-    disorganizedFiles.createIndex({ "idUnico": 1 }, { unique: true, name: "idx_idUnico_unique" });
-    disorganizedFiles.createIndex({ "rutaOrigen": 1 }, { name: "idx_rutaOrigen" });
-    disorganizedFiles.createIndex({ "nombre": 1 }, { name: "idx_nombre" });
-    disorganizedFiles.createIndex({ "mtime": -1 }, { name: "idx_mtime_desc" });
-    disorganizedFiles.createIndex({ "indexadoEn": -1, "mtime": -1 }, { name: "idx_indexado_mtime" });
-    print("✅ Índices creados exitosamente en 'disorganized-files-index'");
+	// Índice único para idUnico (PK funcional)
+	db.files_index.createIndex({ "idUnico": 1 }, { unique: true, name: "idx_id_unico" })
+	// Índice para Reader del servicio de reorganización
+	// Query: { reorg_status: "PENDING" }
+	db.files_index.createIndex({ "reorg_status": 1, "_id": 1 }, { name: "idx_reorg_pending", partialFilterExpression: { "reorg_status": "PENDING" } })
+	// Índice para búsquedas por sourcePath
+	db.files_index.createIndex({ "sourcePath": 1 }, { name: "idx_source_path" })
+	// Índice para búsquedas por extensión y tamaño
+	db.files_index.createIndex({ "extension": 1, "fileSize": -1 }, { name: "idx_extension_size" })
+	// Índice para auditoría de indexación
+	db.files_index.createIndex({ "indexing_status": 1, "indexing_indexedAt": -1 }, { name: "idx_indexing_status" })
+	// Índice para auditoría de reorganización
+	db.files_index.createIndex({ "reorg_status": 1, "reorg_reorganizedAt": -1 }, { name: "idx_reorg_status" })
+	// Índice para metadata de negocio (ejemplo)
+	db.files_index.createIndex({ "business_tipoDocumento": 1, "business_anio": -1 }, { name: "idx_business_tipo_anio", sparse: true })	
+    print("✅ Índices creados exitosamente en 'files_index'");
 } catch (e) {
-    print("❌ Error creando índices en 'disorganized-files-index': " + e);
+    print("❌ Error creando índices en 'files_index': " + e);
 }
 
-// Inserción de documentos de ejemplo - CORREGIDO
+// Inserción de documentos de ejemplo
 try {
-    disorganizedFiles.insertMany([
+    db.files_index.insertMany([
+		// Ejemplo 1: Archivo indexado, pendiente de reorganizar
         {
-            "idUnico": "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456",
-            "rutaOrigen": "/home/testuser/upload/origin/dir1/documento1.pdf",
-            "nombre": "documento1.pdf",
-            "mtime": new Date("2025-12-10T10:30:00.000Z"),
-            "tamanio": NumberLong("1048576"),
-            "extension": ".pdf",
-            "indexadoEn": new Date()
+			"idUnico": "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456",
+			"sourcePath": "/apps/legacy/2023/10/factura_001.pdf",
+			"fileName": "factura_001.pdf",
+			"extension": ".pdf",
+			"fileSize": NumberLong(102456),
+			"lastModificationDate": ISODate("2025-12-10T10:30:00.000Z"),
+
+			"indexing_status": "COMPLETED",
+			"indexing_indexedAt": ISODate("2025-12-19T15:20:00.000Z"),
+			"indexing_errorDescription": null,
+
+			"business_tipoDocumento": "FACTURA",
+			"business_codigoCliente": "C-9982",
+			"business_anio": 2023,
+			"business_mes": 10,
+
+			"reorg_status": "PENDING",
+			"reorg_destinationPath": null,
+			"reorg_reorganizedAt": null,
+			"reorg_jobExecutionId": null,
+			"reorg_durationMs": null,
+			"reorg_attempts": 0,
+			"reorg_errorDescription": null,
+			"reorg_lastAttemptAt": null			
         },
+		// Ejemplo 2: Archivo reorganizado exitosamente
         {
-            "idUnico": "b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef1234567",
-            "rutaOrigen": "/home/testuser/upload/origin/dir1/imagen1.jpg",
-            "nombre": "imagen1.jpg",
-            "mtime": new Date("2025-12-11T14:45:00.000Z"),
-            "tamanio": NumberLong("524288"),
-            "extension": ".jpg",
-            "indexadoEn": new Date()
+			"idUnico": "b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456a1",
+			"sourcePath": "/apps/legacy/2023/11/contrato_002.pdf",
+			"fileName": "contrato_002.pdf",
+			"extension": ".pdf",
+			"fileSize": NumberLong(256789),
+			"lastModificationDate": ISODate("2025-11-15T08:45:00.000Z"),
+
+			"indexing_status": "COMPLETED",
+			"indexing_indexedAt": ISODate("2025-12-19T15:21:00.000Z"),
+			"indexing_errorDescription": null,
+
+			"business_tipoDocumento": "CONTRATO",
+			"business_codigoCliente": "C-1234",
+			"business_anio": 2023,
+			"business_mes": 11,
+
+			"reorg_status": "SUCCESS",
+			"reorg_destinationPath": "/organized/b2/c3/d4/contrato_002.pdf",
+			"reorg_reorganizedAt": ISODate("2025-12-20T10:15:32.000Z"),
+			"reorg_jobExecutionId": NumberLong(12345),
+			"reorg_durationMs": NumberLong(1250),
+			"reorg_attempts": 1,
+			"reorg_errorDescription": null,
+			"reorg_lastAttemptAt": ISODate("2025-12-20T10:15:32.000Z")
         },
+		// Ejemplo 3: Archivo con fallo en reorganización
         {
-            "idUnico": "c3d4e5f6789012345678901234567890abcdef1234567890abcdef12345678",
-            "rutaOrigen": "/home/testuser/upload/origin/dir2/reporte.xlsx",
-            "nombre": "reporte.xlsx",
-            "mtime": new Date("2025-12-12T09:15:00.000Z"),
-            "tamanio": NumberLong("2097152"),
-            "extension": ".xlsx",
-            "indexadoEn": new Date()
+			"idUnico": "c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456a1b2",
+			"sourcePath": "/apps/legacy/2023/12/reporte_003.xlsx",
+			"fileName": "reporte_003.xlsx",
+			"extension": ".xlsx",
+			"fileSize": NumberLong(512000),
+			"lastModificationDate": ISODate("2025-12-01T14:20:00.000Z"),
+
+			"indexing_status": "COMPLETED",
+			"indexing_indexedAt": ISODate("2025-12-19T15:22:00.000Z"),
+			"indexing_errorDescription": null,
+
+			"business_tipoDocumento": "REPORTE",
+			"business_anio": 2023,
+			"business_mes": 12,
+
+			"reorg_status": "FAILED",
+			"reorg_destinationPath": "/organized/c3/d4/e5/reporte_003.xlsx",
+			"reorg_reorganizedAt": null,
+			"reorg_jobExecutionId": NumberLong(12345),
+			"reorg_durationMs": null,
+			"reorg_attempts": 3,
+			"reorg_errorDescription": "SocketTimeoutException: Read timed out",
+			"reorg_lastAttemptAt": ISODate("2025-12-20T10:18:45.000Z")
         },
+		// Ejemplo 4: Archivo en procesamiento
         {
-            "idUnico": "d4e5f6789012345678901234567890abcdef1234567890abcdef123456789",
-            "rutaOrigen": "/home/testuser/upload/origin/dir3/video.mp4",
-            "nombre": "video.mp4",
-            "mtime": new Date("2025-12-13T16:20:00.000Z"),
-            "tamanio": NumberLong("104857600"),
-            "extension": ".mp4",
-            "indexadoEn": new Date()
+			"idUnico": "d4e5f6789012345678901234567890abcdef1234567890abcdef123456a1b2c3",
+			"sourcePath": "/apps/legacy/2024/01/imagen_004.jpg",
+			"fileName": "imagen_004.jpg",
+			"extension": ".jpg",
+			"fileSize": NumberLong(2048000),
+			"lastModificationDate": ISODate("2024-01-05T09:30:00.000Z"),
+
+			"indexing_status": "COMPLETED",
+			"indexing_indexedAt": ISODate("2025-12-19T15:23:00.000Z"),
+			"indexing_errorDescription": null,
+
+			"reorg_status": "PROCESSING",
+			"reorg_destinationPath": "/organized/d4/e5/f6/imagen_004.jpg",
+			"reorg_reorganizedAt": null,
+			"reorg_jobExecutionId": NumberLong(12346),
+			"reorg_durationMs": null,
+			"reorg_attempts": 1,
+			"reorg_errorDescription": null,
+			"reorg_lastAttemptAt": ISODate("2025-12-20T11:05:10.000Z")
         },
+		// Ejemplo 5: Archivo omitido (SKIPPED)
         {
-            "idUnico": "e5f6789012345678901234567890abcdef1234567890abcdef1234567890a",
-            "rutaOrigen": "/home/testuser/upload/origin/notas.txt",
-            "nombre": "notas.txt",
-            "mtime": new Date("2025-12-13T18:00:00.000Z"),
-            "tamanio": NumberLong("4096"),
-            "extension": ".txt",
-            "indexadoEn": new Date()
+			"idUnico": "e5f6789012345678901234567890abcdef1234567890abcdef123456a1b2c3d4",
+			"sourcePath": "/apps/legacy/temp/archivo_temp.tmp",
+			"fileName": "archivo_temp.tmp",
+			"extension": ".tmp",
+			"fileSize": NumberLong(1024),
+			"lastModificationDate": ISODate("2025-12-20T08:00:00.000Z"),
+
+			"indexing_status": "COMPLETED",
+			"indexing_indexedAt": ISODate("2025-12-20T08:05:00.000Z"),
+			"indexing_errorDescription": null,
+
+			"reorg_status": "SKIPPED",
+			"reorg_destinationPath": null,
+			"reorg_reorganizedAt": null,
+			"reorg_jobExecutionId": null,
+			"reorg_durationMs": null,
+			"reorg_attempts": 0,
+			"reorg_errorDescription": "Archivo temporal, excluido de reorganización",
+			"reorg_lastAttemptAt": null
         }
     ]);
-    print("✅ Documentos de ejemplo insertados en 'disorganized-files-index': " + disorganizedFiles.countDocuments());
+    print("✅ Documentos de ejemplo insertados en 'files_index': " + db.files_index.countDocuments());
 } catch (e) {
-    print("❌ Error insertando documentos en 'disorganized-files-index': " + e);
-}
-
-// =============================================
-// COLECCIÓN: organized-files-index - ESQUEMA CORREGIDO
-// =============================================
-
-if (!db.getCollectionNames().includes("organized-files-index")) {
-    try {
-        db.createCollection("organized-files-index", {
-            validator: {
-                $jsonSchema: {
-                    bsonType: "object",
-                    required: ["idUnico", "rutaOrigen", "rutaDestino", "nombre", "status", "processedAt"],
-                    properties: {
-                        idUnico: {
-                            bsonType: "string",
-                            description: "Identificador único del archivo - requerido"
-                        },
-                        rutaOrigen: {
-                            bsonType: "string",
-                            minLength: 1,
-                            description: "Path original en SFTP origen - requerido"
-                        },
-                        rutaDestino: {
-                            bsonType: "string",
-                            minLength: 1,
-                            description: "Path calculado en SFTP destino - requerido"
-                        },
-                        nombre: {
-                            bsonType: "string",
-                            minLength: 1,
-                            description: "Nombre del archivo procesado - requerido"
-                        },
-                        status: {
-                            bsonType: "string",
-                            enum: ["SUCCESS", "FAILED"],
-                            description: "Estado del procesamiento - requerido"
-                        },
-                        processedAt: {
-                            bsonType: "date",
-                            description: "Timestamp de cuando se procesó el archivo - requerido"
-                        },
-                        errorMessage: {
-                            bsonType: ["string", "null"],
-                            description: "Mensaje de error (solo si status=FAILED)"
-                        },
-                        jobExecutionId: {
-                            bsonType: "long",
-                            description: "ID de la ejecución del job batch"
-                        },
-                        duracionMs: {
-                            bsonType: "long",
-                            minimum: 0,
-                            description: "Duración del procesamiento en milisegundos"
-                        },
-                        intentos: {
-                            bsonType: "int",
-                            minimum: 1,
-                            description: "Número de intentos de procesamiento"
-                        }
-                    }
-                }
-            },
-            validationLevel: "strict",
-            validationAction: "error"
-        });
-        print("✅ Colección 'organized-files-index' creada con validación de esquema");
-    } catch (e) {
-        print("❌ Error creando colección 'organized-files-index': " + e);
-    }
-} else {
-    print("ℹ️  Colección 'organized-files-index' ya existe");
-}
-
-// Índices para organized-files-index - CORREGIDO
-try {
-    organizedFiles.createIndex({ "idUnico": 1 }, { unique: true, name: "idx_idUnico_unique" });
-    organizedFiles.createIndex({ "status": 1, "processedAt": -1 }, { name: "idx_status_processedAt" });
-    organizedFiles.createIndex({ "processedAt": -1 }, { name: "idx_processedAt_desc" });
-    organizedFiles.createIndex({ "jobExecutionId": 1 }, { name: "idx_jobExecutionId" });
-    organizedFiles.createIndex({ "rutaDestino": 1 }, { name: "idx_rutaDestino" });
-    print("✅ Índices creados exitosamente en 'organized-files-index'");
-} catch (e) {
-    print("❌ Error creando índices en 'organized-files-index': " + e);
-}
-
-// Inserción de documentos de ejemplo - VERSIÓN CORREGIDA
-try {
-    var idsExistentes = disorganizedFiles.distinct("idUnico");
-    print("📋 IDs disponibles en disorganized-files-index: " + idsExistentes.length);
-    
-    var documentosAInsertar = [
-        {
-            "idUnico": "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456",
-            "rutaOrigen": "/home/testuser/upload/origin/dir1/documento1.pdf",
-            "rutaDestino": "/home/testuser/upload/destination/a1/b2/c3/documento1.pdf",
-            "nombre": "documento1.pdf",
-            "status": "SUCCESS",
-            "processedAt": new Date("2025-12-13T22:35:10.123Z"),
-            // NO incluir errorMessage cuando es null
-            "jobExecutionId": NumberLong("1"),
-            "duracionMs": NumberLong("1234"),
-            "intentos": 1
-        },
-        {
-            "idUnico": "b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef1234567",
-            "rutaOrigen": "/home/testuser/upload/origin/dir1/imagen1.jpg",
-            "rutaDestino": "/home/testuser/upload/destination/b2/c3/d4/imagen1.jpg",
-            "nombre": "imagen1.jpg",
-            "status": "SUCCESS",
-            "processedAt": new Date("2025-12-13T22:35:15.456Z"),
-            // NO incluir errorMessage cuando es null
-            "jobExecutionId": NumberLong("1"),
-            "duracionMs": NumberLong("890"),
-            "intentos": 1
-        },
-        {
-            "idUnico": "c3d4e5f6789012345678901234567890abcdef1234567890abcdef12345678",
-            "rutaOrigen": "/home/testuser/upload/origin/dir2/reporte.xlsx",
-            "rutaDestino": "/home/testuser/upload/destination/c3/d4/e5/reporte.xlsx",
-            "nombre": "reporte.xlsx",
-            "status": "FAILED",
-            "processedAt": new Date("2025-12-13T22:35:20.789Z"),
-            "errorMessage": "Failed to read file from origin SFTP: Connection timeout",
-            "jobExecutionId": NumberLong("1"),
-            "duracionMs": NumberLong("30000"),
-            "intentos": 3
-        },
-        {
-            "idUnico": "d4e5f6789012345678901234567890abcdef1234567890abcdef123456789",
-            "rutaOrigen": "/home/testuser/upload/origin/dir3/video.mp4",
-            "rutaDestino": "/home/testuser/upload/destination/d4/e5/f6/video.mp4",
-            "nombre": "video.mp4",
-            "status": "SUCCESS",
-            "processedAt": new Date("2025-12-13T22:36:45.123Z"),
-            // NO incluir errorMessage cuando es null
-            "jobExecutionId": NumberLong("1"),
-            "duracionMs": NumberLong("45000"),
-            "intentos": 1
-        }
-    ];
-    
-    var documentosValidos = documentosAInsertar.filter(function(doc) {
-        return idsExistentes.includes(doc.idUnico);
-    });
-    
-    if (documentosValidos.length > 0) {
-        var resultado = organizedFiles.insertMany(documentosValidos);
-        print("✅ Documentos insertados en 'organized-files-index': " + resultado.insertedCount);
-    } else {
-        print("⚠️  No se insertaron documentos - IDs no coinciden con disorganized-files-index");
-    }
-    
-} catch (e) {
-    print("❌ Error insertando documentos en 'organized-files-index': " + e);
+    print("❌ Error insertando documentos en 'files_index': " + e);
 }
 
 // =============================================
@@ -328,13 +302,9 @@ print("📊 Base de datos: " + db.getName());
 print("👤 Usuario aplicación: " + process.env.MONGO_USER);
 print("📦 Colecciones: " + JSON.stringify(db.getCollectionNames()));
 print("");
-print("📁 Colección 'disorganized-files-index':");
-print("   🔍 Índices: " + disorganizedFiles.getIndexes().length);
-print("   📄 Documentos: " + disorganizedFiles.countDocuments());
-print("");
-print("📁 Colección 'organized-files-index':");
-print("   🔍 Índices: " + organizedFiles.getIndexes().length);
-print("   📄 Documentos: " + organizedFiles.countDocuments());
+print("📁 Colección 'files_index':");
+print("   🔍 Índices: " + db.files_index.getIndexes().length);
+print("   📄 Documentos: " + db.files_index.countDocuments());
 print("");
 print("✅ Inicialización completada exitosamente");
 print("========================================");
@@ -345,21 +315,15 @@ print("========================================");
 
 print("\n=== CONSULTAS DE VERIFICACIÓN ===");
 
-// Verificar índices de disorganized-files-index
-print("\n🔍 Índices en 'disorganized-files-index':");
-disorganizedFiles.getIndexes().forEach(function(index) {
-    print("   - " + index.name + ": " + JSON.stringify(index.key));
-});
-
-// Verificar índices de organized-files-index
-print("\n🔍 Índices en 'organized-files-index':");
-organizedFiles.getIndexes().forEach(function(index) {
+// Verificar índices de files_index
+print("\n🔍 Índices en 'files_index':");
+db.files_index.getIndexes().forEach(function(index) {
     print("   - " + index.name + ": " + JSON.stringify(index.key));
 });
 
 // Estadísticas de archivos procesados
 print("\n📊 Estadísticas de procesamiento:");
-var stats = organizedFiles.aggregate([
+var stats = db.files_index.aggregate([
     {
         $group: {
             _id: "$status",
