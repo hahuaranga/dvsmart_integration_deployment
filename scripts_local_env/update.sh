@@ -8,6 +8,7 @@ IMAGE_LIST=(
 			"dvsmart-reorganization-api"
 			"dvsmart-catalog-mongodb"
 			"dvsmart-indexing-api"
+			"dvsmart-batch-postgresql"
 			)
 BASE_DIR=dvsmart_integration_helm
 NAMESPACE=dvsmart
